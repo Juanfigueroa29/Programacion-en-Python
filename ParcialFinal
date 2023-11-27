@@ -1,0 +1,38 @@
+from flask import Flask, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+db = SQLAlchemy(app)
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+
+@app.route('/')
+def hello_world():
+    return jsonify({'message': 'Este es un ejemplo de un Api Rest con Flask para el Parcial Final de Programacion en Python.!'})
+
+@app.route('/api/users', methods=['GET'])
+def get_users():
+    users = User.query.all()
+    return jsonify({'users': [{'id': user.id, 'username': user.username} for user in users]})
+
+@app.route('/api/users', methods=['POST'])
+def add_user():
+    data = request.get_json()
+    username = data.get('username')
+
+    if not username:
+        return jsonify({'error': 'El campo "username" es obligatorio'}), 400
+
+    new_user = User(username=username)
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({'message': 'Usuario agregado correctamente', 'username': new_user.username, 'id': new_user.id}), 201
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
